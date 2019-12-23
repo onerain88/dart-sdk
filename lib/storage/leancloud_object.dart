@@ -1,3 +1,4 @@
+import 'package:leancloud/storage/leancloud_decoder.dart';
 import 'package:leancloud/storage/leancloud_request.dart';
 
 import '../leancloud.dart';
@@ -14,6 +15,8 @@ class LeanCloudObject {
   Map<String, dynamic> customProperties;
 
   bool isDirty;
+
+  LeanCloudObject(this.className);
 
   String getClassName() {
     return className;
@@ -58,16 +61,29 @@ class LeanCloudObject {
     var method = objectId == null ? LeanCloudRequestMethod.post : LeanCloudRequestMethod.put;
     var data = customProperties;
     var request = new LeanCloudRequest(path, method, data);
-    var response = await LeanCloud.defaultLeanCloud.client.send(request);
-    objectId = response['objectId'];
-    createdAt = DateTime.parse(response['createdAt']);
-    if (response.containsKey('updatedAt')) {
-      updatedAt = DateTime.parse(response['updatedAt']);
-    } else {
-      updatedAt = createdAt;
-    }
-    // TODO 自定义属性
-
+    var response = await LeanCloud.client.send(request);
+    var obj = decodeObject(className, response);
+    merge(obj);
     return this;
+  }
+
+  merge(LeanCloudObject obj) {
+    if (obj.className != null) {
+      className = obj.className;
+    }
+    if (obj.objectId != null) {
+      objectId = obj.objectId;
+    }
+    if (obj.createdAt != null) {
+      createdAt = obj.createdAt;
+    }
+    if (obj.updatedAt != null) {
+      updatedAt = obj.updatedAt;
+    }
+    if (obj.customProperties != null && obj.customProperties.length > 0) {
+      obj.customProperties.forEach((key, value) {
+        customProperties[key] = value;
+      });
+    }
   }
 }
